@@ -1,0 +1,1609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Real Estate Search</title>
+  <style>
+    /* Общие стили */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f4f4f4;
+      padding: 24px;
+    }
+    .search-container {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    #search {
+      flex: 1;
+      padding: 14px 24px;
+      border: 1px solid #cccccc;
+      border-radius: 32px;
+      font-size: 16px;
+      outline: none;
+      transition: all 0.2s;
+    }
+    #search:focus {
+      border-color: #ff385c;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .filter-btn {
+      padding: 12px 24px;
+      background: #ffffff;
+      border: 1px solid #cccccc;
+      border-radius: 32px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .filter-btn:hover {
+      border-color: #ff385c;
+      color: #ff385c;
+    }
+    .filters-panel {
+      position: fixed;
+      top: 80px;
+      right: 24px;
+      background: #ffffff;
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+      width: 400px;
+      max-height: 80vh;
+      overflow-y: auto;
+      border: 1px solid #e0e0e0;
+      display: none;
+      z-index: 1000;
+    }
+    .filters-section {
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .filters-section:last-child {
+      border-bottom: none;
+    }
+    .filters-section h3 {
+      font-size: 16px;
+      margin-bottom: 12px;
+      color: #333333;
+    }
+    .slider-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .slider-container span {
+      font-size: 14px;
+      color: #333;
+      min-width: 40px;
+      text-align: center;
+    }
+    input[type="range"] {
+      flex: 1;
+    }
+    select {
+      width: 100%;
+      padding: 8px;
+      font-size: 14px;
+      border: 1px solid #cccccc;
+      border-radius: 4px;
+      background: #ffffff;
+      outline: none;
+    }
+    .filter-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .filter-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      padding: 8px 12px;
+      border: 1px solid #dddddd;
+      border-radius: 20px;
+      background: #fafafa;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .filter-item:hover {
+      background: #f0f0f0;
+      border-color: #ff385c;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 24px;
+      max-width: 1200px;
+      margin: 24px auto 0; /* Отступ сверху между поиском и карточками */
+    }
+    .listing {
+      background: #ffffff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+    }
+    .listing:hover {
+      transform: translateY(-4px);
+    }
+    .slider {
+      position: relative;
+    }
+    .slider img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      display: block;
+    }
+    .slider-controls {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 4px;
+    }
+    .slider-btn {
+      width: 12px;
+      height: 12px;
+      border: 1px solid rgba(255,255,255,0.8);
+      background: rgba(255,255,255,0.5);
+      border-radius: 50%;
+      cursor: pointer;
+      padding: 0;
+      outline: none;
+      border: none;
+    }
+    .slider-btn:hover {
+      background: rgba(255,255,255,0.8);
+    }
+    .listing-info {
+      padding: 12px;
+    }
+    .listing-info h3 {
+      font-size: 16px;
+      margin-bottom: 4px;
+      color: #333;
+    }
+    .listing-info p {
+      color: #666;
+      font-size: 12px;
+      margin-bottom: 2px;
+    }
+    .listing-info p.price {
+      font-size: 14px;
+      font-weight: bold;
+      color: #ff385c;
+      margin: 4px 0;
+    }
+    .listing-info p.action {
+      font-size: 12px;
+      font-style: italic;
+      color: #333;
+      margin-bottom: 4px;
+    }
+    .listing-info p.details {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 2px;
+    }
+    #search::placeholder {
+      color: #666666;
+    }
+    .prev-btn, .next-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 20px;
+      height: 20px;
+      font-size: 12px;
+      color: white;
+      background-color: rgba(0, 0, 0, 0.2);
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .prev-btn {
+      left: 10px;
+    }
+    .next-btn {
+      right: 10px;
+    }
+    .prev-btn:hover, .next-btn:hover {
+      background-color: rgba(0, 0, 0, 0.6);
+    }
+  </style>
+</head>
+<body>
+  <div class="search-container">
+    <input type="text" id="search" placeholder="Search real estate..." />
+    <button class="filter-btn" onclick="toggleFilters()">⚙️ Filters</button>
+    <button class="filter-btn" onclick="switchLanguage('ru')">Ru</button>
+  </div>
+
+  <div class="filters-panel" id="filtersPanel">
+    <!-- Фильтр по цене (один ползунок) -->
+    <div class="filters-section">
+      <h3>Price</h3>
+      <div class="filter-item">
+        <label for="price">Maximum price: <span id="priceDisplay">100000</span> ₸</label>
+        <input type="range" id="price" name="price" min="10000" max="100000" value="100000" oninput="updatePriceDisplay()">
+      </div>
+    </div>
+    <!-- Фильтр по площади (один ползунок) -->
+    <div class="filters-section">
+      <h3>Area</h3>
+      <div class="filter-item">
+        <label for="area">Maximum area: <span id="areaDisplay">500</span> m²</label>
+        <input type="range" id="area" name="area" min="20" max="500" value="500" oninput="updateAreaDisplay()">
+      </div>
+    </div>
+    <!-- Фильтр по количеству комнат (группа чекбоксов) -->
+    <div class="filters-section">
+      <h3>Number of rooms</h3>
+      <div class="filter-group">
+        <label class="filter-item">
+          <input type="checkbox" name="rooms" value="1" />
+          1
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="rooms" value="2" />
+          2
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="rooms" value="3" />
+          3
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="rooms" value="4" />
+          4
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="rooms" value="5" />
+          5
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="rooms" value="6" />
+          6
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="rooms" value="7" />
+          7
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="rooms" value="8" />
+          8
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="rooms" value="9" />
+          9
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="rooms" value="10" />
+          10
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="rooms" value="11" />
+          11
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="rooms" value="12" />
+          12
+        </label>
+      </div>
+    </div>
+    <!-- Фильтры по типу действия -->
+    <div class="filters-section">
+      <h3>Listing type</h3>
+      <div class="filter-group">
+        <label class="filter-item">
+          <input type="checkbox" name="action" value="rent" />
+          rent
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="action" value="buy" />
+          buy
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="action" value="sell" />
+          sell
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="action" value="short-term rent" />
+          short-term rent
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="action" value="long-term rent" />
+          long-term rent
+        </label>
+      </div>
+    </div>
+    <!-- Фильтры по типу недвижимости -->
+    <div class="filters-section">
+      <h3>Property type</h3>
+      <div class="filter-group">
+        <label class="filter-item">
+          <input type="checkbox" name="type" value="studio flat" />
+          studio flat
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="type" value="villa" />
+          villa
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="type" value="apartment" />
+          apartment
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="type" value="flat" />
+          flat
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="type" value="room" />
+          room
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="type" value="house" />
+          house
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="type" value="cottage" />
+          cottage
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="type" value="land plot" />
+          land plot
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="type" value="garage" />
+          garage
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="type" value="hostel" />
+          hostel
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="type" value="studio" />
+          studio
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="type" value="guest house" />
+          guest house
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="type" value="apart-hotel" />
+          apart-hotel
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="type" value="hotel" />
+          hotel
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="type" value="motel" />
+          motel
+        </label>
+      </div>
+    </div>
+    <!-- Фильтры по городу -->
+    <div class="filters-section">
+      <h3>City</h3>
+      <div class="filter-group">
+        <label class="filter-item">
+          <input type="checkbox" name="city" value="Almaty" />
+          Almaty
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="city" value="Astana" />
+          Astana
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="city" value="Shymkent" />
+          Shymkent
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="city" value="Aktau" />
+          Aktau
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="city" value="Atyrau" />
+          Atyrau
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="city" value="Ust-Kamenogorsk" />
+          Ust-Kamenogorsk
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="city" value="Petropavl" />
+          Petropavl
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="city" value="Karaganda" />
+          Karaganda
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="city" value="Aktobe" />
+          Aktobe
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="city" value="Oral" />
+          Oral
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="city" value="Kostanay" />
+          Kostanay
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="city" value="Pavlodar" />
+          Pavlodar
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="city" value="Taraz" />
+          Taraz
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="city" value="Kyzylorda" />
+          Kyzylorda
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="city" value="Semey" />
+          Semey
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="city" value="Kokshetau" />
+          Kokshetau
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="city" value="Turkestan" />
+          Turkestan
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="city" value="Temirtau" />
+          Temirtau
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="city" value="Uralsk" />
+          Uralsk
+        </label>
+      </div>
+    </div>
+    <!-- Фильтры по удобствам -->
+    <div class="filters-section">
+      <h3>Comfort</h3>
+      <div class="filter-group">
+        <label class="filter-item">
+          <input type="checkbox" name="comfort" value="pets allowed" />
+          pets allowed
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="comfort" value="free wifi" />
+          free wi-fi
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="comfort" value="good soundproofing" />
+          good soundproofing
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="comfort" value="separate bedroom" />
+          separate bedroom
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="comfort" value="charging station" />
+          charging station
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="comfort" value="robot vacuum cleaner" />
+          robot vacuum cleaner
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="comfort" value="home theater" />
+          home theater
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="comfort" value="projector" />
+          projector
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="comfort" value="mountain view" />
+          mountain view
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="comfort" value="smart lock" />
+          smart lock
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="comfort" value="smart TV" />
+          smart tv
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="comfort" value="high-speed internet" />
+          high-speed internet
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="comfort" value="fiber optic internet" />
+          fiber optic internet
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="comfort" value="5G coverage" />
+          5g coverage
+        </label>
+      </div>
+    </div>
+    <!-- Фильтры по развлечениям -->
+    <div class="filters-section">
+      <h3>Entertainment</h3>
+      <div class="filter-group">
+        <label class="filter-item">
+          <input type="checkbox" name="entertainment" value="swimming pool" />
+          swimming pool
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="entertainment" value="mini bar" />
+          mini bar
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="entertainment" value="jacuzzi" />
+          jacuzzi
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="entertainment" value="LED lighting" />
+          led lighting
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="entertainment" value="game console" />
+          game console
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="entertainment" value="board games" />
+          board games
+        </label>
+      </div>
+    </div>
+    <div class="filters-section">
+      <h3>Ownership</h3>
+      <div class="filter-group">
+        <label class="filter-item">
+          <input type="checkbox" name="ownership" value="owner" />
+          owner
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="ownership" value="realtor" />
+          realtor
+        </label>
+      </div>
+    </div>
+    <div class="filters-section">
+      <h3>Rental period</h3>
+      <div class="filter-group">
+        <label class="filter-item">
+          <input type="checkbox" name="rental_period" value="daily" />
+          daily
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="rental_period" value="weekly" />
+          weekly
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="rental_period" value="monthly" />
+          monthly
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="rental_period" value="yearly" />
+          yearly
+        </label>
+      </div>
+    </div>
+    <div class="filters-section">
+      <h3>Family features</h3>
+      <div class="filter-group">
+        <label class="filter-item">
+          <input type="checkbox" name="family" value="car-sharing" />
+          car-sharing
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="family" value="baby crib" />
+          baby crib
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="family" value="family" />
+          family
+        </label>
+      </div>
+    </div>
+    <div class="filters-section">
+      <h3>Apartment features</h3>
+      <div class="filter-group">
+        <label class="filter-item">
+          <input type="checkbox" name="apart_features" value="balcony" />
+          balcony
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="apart_features" value="unfurnished" />
+          unfurnished
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="apart_features" value="cosmetic repairs" />
+          cosmetic repairs
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="apart_features" value="furnished" />
+          furnished
+        </label>
+      </div>
+    </div>
+    <div class="filters-section">
+      <h3>Security features</h3>
+      <div class="filter-group">
+        <label class="filter-item">
+          <input type="checkbox" name="apart_security" value="gated community" />
+          gated community
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="apart_security" value="24/7 security" />
+          24/7 security
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="apart_security" value="guarded entrance" />
+          guarded entrance
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="apart_security" value="CCTV cameras" />
+          cctv cameras
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="apart_security" value="elevator" />
+          elevator
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="apart_security" value="smart lock" />
+          smart lock
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="apart_security" value="video intercom" />
+          video intercom
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="apart_security" value="security" />
+          security
+        </label>
+      </div>
+    </div>
+    <div class="filters-section">
+      <h3>Climate control</h3>
+      <div class="filter-group">
+        <label class="filter-item">
+          <input type="checkbox" name="climate_control" value="air conditioning" />
+          air conditioning
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="climate_control" value="fan" />
+          fan
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="climate_control" value="heater" />
+          heater
+        </label>
+      </div>
+    </div>
+    <div class="filters-section">
+      <h3>Bedroom & bath</h3>
+      <div class="filter-group">
+        <label class="filter-item">
+          <input type="checkbox" name="bedroom_bath" value="shower" />
+          shower
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="bedroom_bath" value="laundry" />
+          laundry
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="bedroom_bath" value="hygiene products" />
+          hygiene products
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="bedroom_bath" value="iron" />
+          iron
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="bedroom_bath" value="washing machine" />
+          washing machine
+        </label>
+      </div>
+    </div>
+    <div class="filters-section">
+      <h3>Nearby facilities</h3>
+      <div class="filter-group">
+        <label class="filter-item">
+          <input type="checkbox" name="nearby_facilities" value="public transport" />
+          public transport
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="nearby_facilities" value="restaurant" />
+          restaurant
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="nearby_facilities" value="coffee shop" />
+          coffee shop
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="nearby_facilities" value="cafe" />
+          cafe
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="nearby_facilities" value="metro station" />
+          metro station
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="nearby_facilities" value="bus stop" />
+          bus stop
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="nearby_facilities" value="airport" />
+          airport
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="nearby_facilities" value="hospital" />
+          hospital
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="nearby_facilities" value="pharmacy" />
+          pharmacy
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="nearby_facilities" value="clinic" />
+          clinic
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="nearby_facilities" value="sports complex" />
+          sports complex
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="nearby_facilities" value="cinema" />
+          cinema
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="nearby_facilities" value="shopping mall" />
+          shopping mall
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="nearby_facilities" value="gym" />
+          gym
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="nearby_facilities" value="spa center" />
+          spa center
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="nearby_facilities" value="car rental" />
+          car rental
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="nearby_facilities" value="bicycle parking" />
+          bicycle parking
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="nearby_facilities" value="playground" />
+          playground
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="nearby_facilities" value="beauty salon" />
+          beauty salon
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="nearby_facilities" value="store" />
+          store
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="nearby_facilities" value="sports ground" />
+          sports ground
+        </label>
+      </div>
+    </div>
+    <div class="filters-section">
+      <h3>International student</h3>
+      <div class="filter-group">
+        <label class="filter-item">
+          <input type="checkbox" name="international_student" value="international student" />
+          international student
+        </label>
+      </div>
+    </div>
+    <div class="filters-section">
+      <h3>Expat friendly</h3>
+      <div class="filter-group">
+        <label class="filter-item">
+          <input type="checkbox" name="expat_friendly" value="expat-friendly" />
+          expat-friendly
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="expat_friendly" value="english-speaking landlord" />
+          english-speaking landlord
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="expat_friendly" value="international community" />
+          international community
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="expat_friendly" value="embassy" />
+          embassy
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="expat_friendly" value="visa support" />
+          visa support
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="expat_friendly" value="foreigner registration assistance" />
+          foreigner registration assistance
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="expat_friendly" value="international school" />
+          international school
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="expat_friendly" value="business center" />
+          business center
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="expat_friendly" value="diplomatic district" />
+          diplomatic district
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div id="listings" class="grid"></div>
+
+  <script>
+    // Обновление отображения ползунка цены
+    function updatePriceDisplay() {
+      const val = document.getElementById("price").value;
+      document.getElementById("priceDisplay").textContent = val;
+      renderListings();
+    }
+    // Обновление отображения ползунка площади
+    function updateAreaDisplay() {
+      const val = document.getElementById("area").value;
+      console.log("Area slider value:", val);
+      document.getElementById("areaDisplay").textContent = val;
+      renderListings();
+    }
+    // Извлечение числа из строки цены
+    function parsePrice(priceStr) {
+      return parseInt(priceStr.replace(/\D/g, ''), 10);
+    }
+    // Извлечение числа из строки площади
+    function parseArea(areaStr) {
+      if (typeof areaStr !== 'string') areaStr = String(areaStr);
+      const match = areaStr.match(/\d+/);
+      return match ? parseInt(match[0], 10) : 0;
+    }
+    // Отправка запроса к ML модели через FastAPI
+    function sendQuery() {
+      const query = document.getElementById("search").value;
+      fetch("https://realty-ml-app3-542913747795.us-central1.run.app/parse_en", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: query })
+      })
+      .then(response => response.json())
+      .then(data => {
+        console.log("Ответ от ML модели:", data);
+        // Сбрасываем все чекбоксы
+        document.querySelectorAll('.filters-panel input[type="checkbox"]').forEach(checkbox => {
+          checkbox.checked = false;
+        });
+        const recognized = data.mapped_result || {};
+        if (recognized.action_types) {
+          const actionValue = recognized.action_types.trim();
+          const actionCheckbox = document.querySelector(`input[name="action"][value="${actionValue}"]`);
+          if (actionCheckbox) { actionCheckbox.checked = true; }
+        }
+        if (recognized.realty_types) {
+          const realtyValue = findClosestMatch(recognized.realty_types.trim(), ["studio flat", "villa", "apartment", "flat", "room", "house", "cottage", "land plot", "garage", "hostel", "studio", "guest house", "apart-hotel", "hotel", "motel"]);
+          const realtyCheckbox = document.querySelector(`input[name="type"][value="${realtyValue}"]`);
+          if (realtyCheckbox) { realtyCheckbox.checked = true; }
+        }
+        if (recognized.town) {
+          const townValue = recognized.town.trim();
+          const townCheckbox = document.querySelector(`input[name="city"][value="${townValue}"]`);
+          if (townCheckbox) { townCheckbox.checked = true; }
+        }
+        if (Array.isArray(recognized.comfort)) {
+          recognized.comfort.forEach(item => {
+            const amenityValue = item.trim();
+            const amenityCheckbox = document.querySelector(`input[name="comfort"][value="${amenityValue}"]`);
+            if (amenityCheckbox) { amenityCheckbox.checked = true; }
+          });
+        }
+        if (Array.isArray(recognized.entertainment)) {
+          recognized.entertainment.forEach(item => {
+            const entValue = item.trim();
+            const entCheckbox = document.querySelector(`input[name="entertainment"][value="${entValue}"]`);
+            if (entCheckbox) { entCheckbox.checked = true; }
+          });
+        }
+        // Если распознана цена, обновляем ползунок
+        if (recognized.price) {
+          const priceValue = parseInt(recognized.price.replace(/\D/g, ''), 10);
+          if (!isNaN(priceValue)) {
+            document.getElementById("price").value = priceValue;
+            document.getElementById("priceDisplay").textContent = priceValue;
+          }
+        }
+        // Если распознана площадь, обновляем ползунок
+        if (recognized.area) {
+          const areaValue = parseArea(recognized.area);
+          console.log("Recognized area:", recognized.area, "Parsed area value:", areaValue);
+          if (!isNaN(areaValue)) {
+            document.getElementById("area").value = areaValue;
+            document.getElementById("areaDisplay").textContent = areaValue;
+          }
+        }
+        // Если распознано количество комнат, обновляем выбор в select
+        if (recognized.rooms) {
+          const roomsValue = parseInt(recognized.rooms, 10);
+          if (!isNaN(roomsValue)) {
+            document.querySelectorAll(`input[name="rooms"][value="${roomsValue}"]`).forEach(checkbox => {
+              checkbox.checked = true;
+            });
+          }
+        }
+        // Очищаем поле поиска
+        document.getElementById("search").value = "";
+        renderListings();
+      })
+      .catch(err => console.error("Ошибка:", err));
+    }
+    // Переключение отображения панели фильтров
+    function toggleFilters() {
+      const panel = document.getElementById("filtersPanel");
+      panel.style.display = panel.style.display === "block" ? "none" : "block";
+    }
+    // Массив объявлений (цены, площади и комнаты – строки/числа)
+    function loadImages(listingId) {
+      const folderPath = `file:///C:/Users/Professional/Desktop/site_gpt_3/static/photo/${listingId}/`;
+      // Provide at least one default image to ensure the listing is displayed
+      const images = [`${folderPath}1.jpg`];
+      
+      // Try to load additional images asynchronously
+      for (let i = 2; i <= 15; i++) {
+        const imagePath = `${folderPath}${i}.jpg`;
+        const img = new Image();
+        img.src = imagePath;
+        img.onload = () => {
+          console.log(`Loaded: ${imagePath}`);
+          images.push(imagePath);
+        };
+        img.onerror = () => {
+          console.log(`Failed to load: ${imagePath}`);
+        };
+      }
+      
+      return images;
+    }
+
+    const listings = [
+      {
+        id: 1,
+        title: "Modern apartment in the center",
+        price: "30000 ₸",
+        area: "65 m2",
+        rooms: 2,
+        city: "Astana",
+        type: "apartment",
+        action: "rent",
+        amenities: ["air conditioning", "free Wi-Fi"],
+        entertainment: ["smart tv"],
+        images: loadImages(1)
+      },
+      {
+        id: 2,
+        title: "Cozy house with a garden",
+        price: "35000 ₸",
+        area: "120 m2",
+        rooms: 3,
+        city: "Almaty",
+        type: "house",
+        action: "buy",
+        amenities: ["garage", "air conditioning"],
+        entertainment: ["pool"],
+        images: loadImages(2)
+      },
+      {
+        id: 3,
+        title: "Stylish apartment with a view",
+        price: "32000 ₸",
+        area: "75 m2",
+        rooms: 1,
+        city: "Astana",
+        type: "apartment",
+        action: "rent",
+        amenities: ["free Wi-Fi"],
+        entertainment: ["smart tv", "pool"],
+        images: loadImages(3)
+      },
+      {
+        id: 4,
+        title: "Elite residence",
+        price: "40000 ₸",
+        area: "150 m2",
+        rooms: 4,
+        city: "Almaty",
+        type: "house",
+        action: "buy",
+        amenities: ["pool", "air conditioning"],
+        entertainment: ["smart tv"],
+        images: loadImages(4)
+      },
+      {
+        id: 5,
+        title: "Modern penthouse",
+        price: "33000 ₸",
+        area: "90 m2",
+        rooms: 3,
+        city: "Astana",
+        type: "apartment",
+        action: "buy",
+        amenities: ["air conditioning", "free Wi-Fi"],
+        entertainment: ["smart tv", "pool"],
+        images: loadImages(5)
+      },
+      {
+        id: 6,
+        title: "Cozy apartment with renovation",
+        price: "25000 ₸",
+        area: "60 m2",
+        rooms: 2,
+        city: "Almaty",
+        type: "apartment",
+        action: "rent",
+        amenities: ["free Wi-Fi"],
+        entertainment: ["smart tv"],
+        images: loadImages(6)
+      },
+      {
+        id: 7,
+        title: "Luxury villa with pool",
+        price: "50000 ₸",
+        area: "200 m2",
+        rooms: 5,
+        city: "Shymkent",
+        type: "villa",
+        action: "rent",
+        amenities: ["pool", "garage"],
+        entertainment: ["home theater"],
+        images: loadImages(7)
+      },
+      {
+        id: 8,
+        title: "Charming cottage",
+        price: "28000 ₸",
+        area: "80 m2",
+        rooms: 2,
+        city: "Aktau",
+        type: "cottage",
+        action: "buy",
+        amenities: ["garden", "fireplace"],
+        entertainment: ["board games"],
+        images: loadImages(8)
+      },
+      {
+        id: 9,
+        title: "Spacious flat in city center",
+        price: "27000 ₸",
+        area: "70 m2",
+        rooms: 3,
+        city: "Atyrau",
+        type: "flat",
+        action: "rent",
+        amenities: ["elevator", "balcony"],
+        entertainment: ["game console"],
+        images: loadImages(9)
+      },
+      {
+        id: 10,
+        title: "Modern studio apartment",
+        price: "22000 ₸",
+        area: "45 m2",
+        rooms: 1,
+        city: "Ust-Kamenogorsk",
+        type: "studio",
+        action: "buy",
+        amenities: ["smart lock", "high-speed internet"],
+        entertainment: ["smart tv"],
+        images: loadImages(10)
+      },
+      {
+        id: 11,
+        title: "Cozy guest house",
+        price: "26000 ₸",
+        area: "55 m2",
+        rooms: 2,
+        city: "Petropavl",
+        type: "guest house",
+        action: "rent",
+        amenities: ["pets allowed", "free Wi-Fi"],
+        entertainment: ["jacuzzi"],
+        images: loadImages(11)
+      },
+      {
+        id: 12,
+        title: "Elegant apart-hotel suite",
+        price: "45000 ₸",
+        area: "100 m2",
+        rooms: 3,
+        city: "Karaganda",
+        type: "apart-hotel",
+        action: "buy",
+        amenities: ["air conditioning", "smart TV"],
+        entertainment: ["mini bar"],
+        images: loadImages(12)
+      },
+      {
+        id: 13,
+        title: "Luxury hotel room",
+        price: "60000 ₸",
+        area: "150 m2",
+        rooms: 4,
+        city: "Aktobe",
+        type: "hotel",
+        action: "rent",
+        amenities: ["pool", "spa center"],
+        entertainment: ["home theater"],
+        images: loadImages(13)
+      },
+      {
+        id: 14,
+        title: "Chic motel room",
+        price: "18000 ₸",
+        area: "30 m2",
+        rooms: 1,
+        city: "Oral",
+        type: "motel",
+        action: "buy",
+        amenities: ["parking", "24/7 security"],
+        entertainment: ["board games"],
+        images: loadImages(14)
+      },
+      {
+        id: 15,
+        title: "Spacious garage apartment",
+        price: "15000 ₸",
+        area: "40 m2",
+        rooms: 1,
+        city: "Kostanay",
+        type: "garage",
+        action: "rent",
+        amenities: ["smart lock", "fiber optic internet"],
+        entertainment: ["game console"],
+        images: loadImages(15)
+      },
+      {
+        id: 16,
+        title: "Modern hostel room",
+        price: "12000 ₸",
+        area: "25 m2",
+        rooms: 1,
+        city: "Pavlodar",
+        type: "hostel",
+        action: "buy",
+        amenities: ["free Wi-Fi", "laundry"],
+        entertainment: ["smart tv"],
+        images: loadImages(16)
+      },
+      {
+        id: 17,
+        title: "Charming land plot",
+        price: "70000 ₸",
+        area: "500 m2",
+        rooms: 0,
+        city: "Taraz",
+        type: "land plot",
+        action: "rent",
+        amenities: ["mountain view", "charging station"],
+        entertainment: ["projector"],
+        images: loadImages(17)
+      },
+      {
+        id: 18,
+        title: "Elegant hotel suite",
+        price: "55000 ₸",
+        area: "110 m2",
+        rooms: 3,
+        city: "Kyzylorda",
+        type: "hotel",
+        action: "buy",
+        amenities: ["air conditioning", "smart TV"],
+        entertainment: ["mini bar"],
+        images: loadImages(18)
+      },
+      {
+        id: 19,
+        title: "Luxury villa with garden",
+        price: "80000 ₸",
+        area: "300 m2",
+        rooms: 6,
+        city: "Semey",
+        type: "villa",
+        action: "rent",
+        amenities: ["pool", "garage"],
+        entertainment: ["home theater"],
+        images: loadImages(19)
+      },
+      {
+        id: 20,
+        title: "Chic apartment with view",
+        price: "35000 ₸",
+        area: "85 m2",
+        rooms: 2,
+        city: "Kokshetau",
+        type: "apartment",
+        action: "buy",
+        amenities: ["balcony", "elevator"],
+        entertainment: ["smart tv"],
+        images: loadImages(20)
+      },
+      {
+        id: 21,
+        title: "Cozy studio flat",
+        price: "20000 ₸",
+        area: "50 m2",
+        rooms: 1,
+        city: "Turkestan",
+        type: "studio flat",
+        action: "rent",
+        amenities: ["free Wi-Fi", "smart lock"],
+        entertainment: ["game console"],
+        images: loadImages(21)
+      },
+      {
+        id: 22,
+        title: "Modern guest house",
+        price: "30000 ₸",
+        area: "70 m2",
+        rooms: 2,
+        city: "Temirtau",
+        type: "guest house",
+        action: "buy",
+        amenities: ["pets allowed", "free Wi-Fi"],
+        entertainment: ["jacuzzi"],
+        images: loadImages(22)
+      },
+      {
+        id: 23,
+        title: "Elegant apart-hotel room",
+        price: "40000 ₸",
+        area: "90 m2",
+        rooms: 3,
+        city: "Uralsk",
+        type: "apart-hotel",
+        action: "rent",
+        amenities: ["air conditioning", "smart TV"],
+        entertainment: ["mini bar"],
+        images: loadImages(23)
+      },
+      {
+        id: 24,
+        title: "Luxury hotel suite",
+        price: "70000 ₸",
+        area: "130 m2",
+        rooms: 4,
+        city: "Almaty",
+        type: "hotel",
+        action: "buy",
+        amenities: ["pool", "spa center"],
+        entertainment: ["home theater"],
+        images: loadImages(24)
+      },
+      {
+        id: 25,
+        title: "Chic motel room",
+        price: "18000 ₸",
+        area: "30 m2",
+        rooms: 1,
+        city: "Astana",
+        type: "motel",
+        action: "rent",
+        amenities: ["parking", "24/7 security"],
+        entertainment: ["board games"],
+        images: loadImages(25)
+      },
+      {
+        id: 26,
+        title: "Spacious garage apartment",
+        price: "15000 ₸",
+        area: "40 m2",
+        rooms: 1,
+        city: "Shymkent",
+        type: "garage",
+        action: "buy",
+        amenities: ["smart lock", "fiber optic internet"],
+        entertainment: ["game console"],
+        images: loadImages(26)
+      },
+      {
+        id: 27,
+        title: "Charming studio in the heart of the city",
+        price: "25000 ₸",
+        area: "55 m2",
+        rooms: 1,
+        city: "Astana",
+        type: "studio",
+        action: "rent",
+        amenities: ["free Wi-Fi", "smart lock"],
+        entertainment: ["smart tv"],
+        images: loadImages(27)
+      },
+      {
+        id: 28,
+        title: "Cozy apartment with a balcony",
+        price: "30000 ₸",
+        area: "70 m2",
+        rooms: 2,
+        city: "Almaty",
+        type: "apartment",
+        action: "buy",
+        amenities: ["balcony", "air conditioning"],
+        entertainment: ["game console"],
+        images: loadImages(28)
+      },
+      {
+        id: 29,
+        title: "Luxury villa with a pool",
+        price: "75000 ₸",
+        area: "250 m2",
+        rooms: 5,
+        city: "Shymkent",
+        type: "villa",
+        action: "rent",
+        amenities: ["pool", "garage"],
+        entertainment: ["home theater"],
+        images: loadImages(29)
+      },
+      {
+        id: 30,
+        title: "Modern flat with a view",
+        price: "32000 ₸",
+        area: "80 m2",
+        rooms: 3,
+        city: "Atyrau",
+        type: "flat",
+        action: "buy",
+        amenities: ["elevator", "balcony"],
+        entertainment: ["smart tv"],
+        images: loadImages(30)
+      }
+    ];
+    // Отрисовка карточек с учетом фильтров: чекбоксы, цена, площадь и количество комнат (по select)
+    function renderListings() {
+      const filters = {
+        action: getCheckedValues("action"),
+        type: getCheckedValues("type"),
+        city: getCheckedValues("city"),
+        amenities: getCheckedValues("comfort"),
+        entertainment: getCheckedValues("entertainment"),
+        ownership: getCheckedValues("ownership"),
+        rental_period: getCheckedValues("rental_period"),
+        family: getCheckedValues("family"),
+        apart_features: getCheckedValues("apart_features"),
+        apart_security: getCheckedValues("apart_security"),
+        climate_control: getCheckedValues("climate_control"),
+        bedroom_bath: getCheckedValues("bedroom_bath"),
+        nearby_facilities: getCheckedValues("nearby_facilities"),
+        international_student: getCheckedValues("international_student"),
+        expat_friendly: getCheckedValues("expat_friendly")
+      };
+      console.log("Применяемые фильтры:", filters);
+      const priceMax = parseInt(document.getElementById("price").value, 10);
+      const areaMax = parseInt(document.getElementById("area").value, 10);
+      const roomsSelected = getCheckedValues("rooms").map(Number);
+      
+      console.log("Price max:", priceMax, "Area max:", areaMax, "Rooms selected:", roomsSelected);
+      console.log("All listings before filtering:", listings.length);
+      
+      const filtered = listings.filter((item) => {
+        // Ensure item has images array
+        if (!item.images || item.images.length === 0) {
+          console.log(`Listing ${item.id} has no images`);
+          return false;
+        }
+        
+        const matchesFilters = Object.entries(filters).every(([key, values]) =>
+          values.length === 0 ||
+          values.some(v =>
+            Array.isArray(item[key])
+              ? item[key].includes(v)
+              : item[key] === v
+          )
+        );
+        const listingPrice = parsePrice(item.price);
+        const matchesPrice = listingPrice <= priceMax;
+        const listingArea = parseArea(item.area);
+        const matchesArea = listingArea <= areaMax;
+        const matchesRooms = roomsSelected.length === 0 || roomsSelected.includes(item.rooms);
+        
+        // Log any listings that don't match filters
+        if (!matchesFilters || !matchesPrice || !matchesArea || !matchesRooms) {
+          console.log(`Listing ${item.id} filtered out:`, 
+                     {matchesFilters, matchesPrice, matchesArea, matchesRooms, 
+                      price: item.price, parsedPrice: listingPrice, 
+                      area: item.area, parsedArea: listingArea});
+        }
+        
+        return matchesFilters && matchesPrice && matchesArea && matchesRooms;
+      });
+      console.log("Отфильтрованные объявления:", filtered.length);
+      
+      const container = document.getElementById("listings");
+      container.innerHTML = filtered.map((item) =>
+        `<div class="listing">
+          <div class="slider">
+            <img id="listing-image-${item.id}" src="${item.images[0] || ''}" alt="${item.title}">
+            <button class="prev-btn" onclick="prevSlide(${item.id})">&#10094;</button>
+            <button class="next-btn" onclick="nextSlide(${item.id})">&#10095;</button>
+          </div>
+          <div class="listing-info">
+            <h3>${item.title}</h3>
+            <p>${item.city} • ${item.type}</p>
+            <p class="price">${item.price}</p>
+            <p class="action">${item.action}</p>
+            <p class="details">Area: ${item.area}</p>
+            <p class="details">Rooms: ${item.rooms}</p>
+          </div>
+        </div>`
+      ).join('');
+    }
+    // Функция смены изображения в слайдере
+    function changeSlide(listingId, index) {
+      const listing = listings.find(item => item.id === listingId);
+      if (!listing) return;
+      const imgElement = document.getElementById("listing-image-" + listingId);
+      if (imgElement) {
+        imgElement.src = listing.images[index];
+      }
+    }
+    // Получение выбранных значений для фильтра
+    function getCheckedValues(name) {
+      return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(i => i.value);
+    }
+    // Обновление карточек при изменении фильтров
+    document.querySelectorAll(".filters-panel input").forEach(i => {
+      i.addEventListener("change", renderListings);
+    });
+    // Закрытие панели фильтров при клике вне её
+    window.addEventListener("click", (e) => {
+      if (!e.target.closest(".filters-panel") && !e.target.closest(".filter-btn")) {
+        document.getElementById("filtersPanel").style.display = "none";
+      }
+    });
+    // Отправка запроса по нажатию Enter в поле поиска
+    document.getElementById("search").addEventListener("keydown", function(e) {
+      if (e.key === "Enter") {
+        sendQuery();
+      }
+    });
+    // Функция для имитации ввода запросов в строку поиска
+    function simulateTyping() {
+      const searchInput = document.getElementById("search");
+      const queries = [
+        "budget room for international students with laundry and AC",
+        "rent an apartment in Almaty near metro station, under 350000 tenge",
+        "a room with soft lighting and large mirror",
+        "guest house with pool and garden",
+        "2-bedroom flat with high-speed internet in Astana"
+      ];
+      let queryIndex = 0;
+      let charIndex = 0;
+      let isDeleting = false;
+
+      function type() {
+        if (isDeleting) {
+          if (charIndex > 0) {
+            searchInput.placeholder = queries[queryIndex].substring(0, charIndex - 1);
+            charIndex--;
+            setTimeout(type, 50);
+          } else {
+            isDeleting = false;
+            queryIndex = (queryIndex + 1) % queries.length;
+            setTimeout(type, 100);
+          }
+        } else {
+          if (charIndex < queries[queryIndex].length) {
+            searchInput.placeholder = queries[queryIndex].substring(0, charIndex + 1);
+            charIndex++;
+            setTimeout(type, 100);
+          } else {
+            isDeleting = true;
+            setTimeout(type, 2000);
+          }
+        }
+      }
+
+      type();
+    }
+
+    // Запуск имитации ввода при загрузке страницы
+    window.onload = function() {
+      simulateTyping();
+      // Ensure all listings are displayed on page load
+      renderListings();
+      console.log("Total listings:", listings.length);
+    };
+
+    function switchLanguage(lang) {
+      if (lang === 'en') {
+        window.location.href = 'index1_en.html';
+      } else if (lang === 'ru') {
+        window.location.href = 'index1.html';
+      }
+    }
+
+    function prevSlide(listingId) {
+      const listing = listings.find(item => item.id === listingId);
+      if (!listing) return;
+      const imgElement = document.getElementById("listing-image-" + listingId);
+      const currentIndex = listing.images.indexOf(imgElement.src);
+      const prevIndex = (currentIndex - 1 + listing.images.length) % listing.images.length;
+      imgElement.src = listing.images[prevIndex];
+    }
+
+    function nextSlide(listingId) {
+      const listing = listings.find(item => item.id === listingId);
+      if (!listing) return;
+      const imgElement = document.getElementById("listing-image-" + listingId);
+      const currentIndex = listing.images.indexOf(imgElement.src);
+      const nextIndex = (currentIndex + 1) % listing.images.length;
+      imgElement.src = listing.images[nextIndex];
+    }
+
+    function findClosestMatch(input, options) {
+      input = input.toLowerCase();
+      let closestMatch = options[0];
+      let minDistance = levenshteinDistance(input, closestMatch.toLowerCase());
+
+      options.forEach(option => {
+        const distance = levenshteinDistance(input, option.toLowerCase());
+        if (distance < minDistance) {
+          minDistance = distance;
+          closestMatch = option;
+        }
+      });
+
+      return closestMatch;
+    }
+
+    function levenshteinDistance(a, b) {
+      const matrix = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
+
+      for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
+      for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+
+      for (let i = 1; i <= a.length; i++) {
+        for (let j = 1; j <= b.length; j++) {
+          const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j - 1] + cost
+          );
+        }
+      }
+
+      return matrix[a.length][b.length];
+    }
+  </script>
+</body>
+</html> 

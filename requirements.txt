@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+transformers
+torch
+datasets
+rapidfuzz
+pandas
+datasets
+pymorphy2==0.8
+sentencepiece
+python-multipart
+protobuf
+pillow
+requests

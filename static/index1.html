@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Поиск недвижимости</title>
+  <style>
+    /* Общие стили */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f4f4f4;
+      padding: 24px;
+    }
+    .search-container {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    #search {
+      flex: 1;
+      padding: 14px 24px;
+      border: 1px solid #cccccc;
+      border-radius: 32px;
+      font-size: 16px;
+      outline: none;
+      transition: all 0.2s;
+    }
+    #search:focus {
+      border-color: #ff385c;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .filter-btn {
+      padding: 12px 24px;
+      background: #ffffff;
+      border: 1px solid #cccccc;
+      border-radius: 32px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .filter-btn:hover {
+      border-color: #ff385c;
+      color: #ff385c;
+    }
+    .filters-panel {
+      position: fixed;
+      top: 80px;
+      right: 24px;
+      background: #ffffff;
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+      width: 400px;
+      max-height: 80vh;
+      overflow-y: auto;
+      border: 1px solid #e0e0e0;
+      display: none;
+      z-index: 1000;
+    }
+    .filters-section {
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .filters-section:last-child {
+      border-bottom: none;
+    }
+    .filters-section h3 {
+      font-size: 16px;
+      margin-bottom: 12px;
+      color: #333333;
+    }
+    .slider-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .slider-container span {
+      font-size: 14px;
+      color: #333;
+      min-width: 40px;
+      text-align: center;
+    }
+    input[type="range"] {
+      flex: 1;
+    }
+    select {
+      width: 100%;
+      padding: 8px;
+      font-size: 14px;
+      border: 1px solid #cccccc;
+      border-radius: 4px;
+      background: #ffffff;
+      outline: none;
+    }
+    .filter-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .filter-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      padding: 8px 12px;
+      border: 1px solid #dddddd;
+      border-radius: 20px;
+      background: #fafafa;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .filter-item:hover {
+      background: #f0f0f0;
+      border-color: #ff385c;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 24px;
+      max-width: 1200px;
+      margin: 24px auto 0; /* Отступ сверху между поиском и карточками */
+    }
+    .listing {
+      background: #ffffff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      transition: transform 0.2s;
+    }
+    .listing:hover {
+      transform: translateY(-4px);
+    }
+    .slider {
+      position: relative;
+    }
+    .slider img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      display: block;
+    }
+    .slider-controls {
+      position: absolute;
+      bottom: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 4px;
+    }
+    .slider-btn {
+      width: 12px;
+      height: 12px;
+      border: 1px solid rgba(255,255,255,0.8);
+      background: rgba(255,255,255,0.5);
+      border-radius: 50%;
+      cursor: pointer;
+      padding: 0;
+      outline: none;
+      border: none;
+    }
+    .slider-btn:hover {
+      background: rgba(255,255,255,0.8);
+    }
+    .listing-info {
+      padding: 16px;
+    }
+    .listing-info h3 {
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+    .listing-info p {
+      color: #666666;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="search-container">
+    <input type="text" id="search" placeholder="🔍 Поиск недвижимости..." />
+    <button class="filter-btn" onclick="toggleFilters()">⚙️ Фильтры</button>
+    <button class="filter-btn" onclick="switchLanguage('en')">En</button>
+  </div>
+
+  <div class="filters-panel" id="filtersPanel">
+    <!-- Фильтр по цене (один ползунок) -->
+    <div class="filters-section">
+      <h3>Цена</h3>
+      <div class="slider-container">
+        <span>0</span>
+        <input type="range" id="price" min="0" max="35000" step="500" value="35000" oninput="updatePriceDisplay()">
+        <span id="priceDisplay">35000</span>
+      </div>
+    </div>
+    <!-- Фильтр по площади (один ползунок) -->
+    <div class="filters-section">
+      <h3>Площадь</h3>
+      <div class="slider-container">
+        <span>0</span>
+        <input type="range" id="area" min="0" max="200" step="5" value="200" oninput="updateAreaDisplay()">
+        <span id="areaDisplay">200</span>
+      </div>
+    </div>
+    <!-- Фильтр по количеству комнат (выпадающий список) -->
+    <div class="filters-section">
+      <h3>Количество комнат</h3>
+      <select id="roomsSelect" onchange="renderListings()">
+        <option value="0">Любое</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="7">7</option>
+        <option value="8">8</option>
+        <option value="9">9</option>
+        <option value="10">10</option>
+        <option value="11">11</option>
+        <option value="12">12</option>
+      </select>
+    </div>
+    <!-- Фильтры по типу действия -->
+    <div class="filters-section">
+      <h3>Тип действия</h3>
+      <div class="filter-group">
+        <label class="filter-item">
+          <input type="checkbox" name="action" value="аренда" />
+          аренда
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="action" value="покупка" />
+          покупка
+        </label>
+      </div>
+    </div>
+    <!-- Фильтры по типу недвижимости -->
+    <div class="filters-section">
+      <h3>Тип недвижимости</h3>
+      <div class="filter-group">
+        <label class="filter-item">
+          <input type="checkbox" name="type" value="квартира" />
+          квартира
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="type" value="дом" />
+          дом
+        </label>
+      </div>
+    </div>
+    <!-- Фильтры по городу -->
+    <div class="filters-section">
+      <h3>Город</h3>
+      <div class="filter-group">
+        <label class="filter-item">
+          <input type="checkbox" name="city" value="Астана" />
+          Астана
+        </label>
+        <label class="filter-item">
+          <input type="checkbox" name="city" value="Алматы" />
+          Алматы
+        </label>
+      </div>
+    </div>
+    <!-- Фильтры по удобствам -->
+    <div class="filters-section">
+      <h3>Удобства</h3>
+      <div class="filter-group">
+        <label class="filter-item">
+          <input type="checkbox" name="comfort" value="кондиционер" />
+          кондиционер
+        </label>
+      </div>
+    </div>
+    <!-- Фильтры по развлечениям -->
+    <div class="filters-section">
+      <h3>Развлечения</h3>
+      <div class="filter-group">
+        <label class="filter-item">
+          <input type="checkbox" name="entertainment" value="бассейн" />
+          бассейн
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div id="listings" class="grid"></div>
+
+  <script>
+    // Обновление отображения ползунка цены
+    function updatePriceDisplay() {
+      const val = document.getElementById("price").value;
+      document.getElementById("priceDisplay").textContent = val;
+      renderListings();
+    }
+    // Обновление отображения ползунка площади
+    function updateAreaDisplay() {
+      const val = document.getElementById("area").value;
+      document.getElementById("areaDisplay").textContent = val;
+      renderListings();
+    }
+    // Извлечение числа из строки цены
+    function parsePrice(priceStr) {
+      return parseInt(priceStr.replace(/\D/g, ''), 10);
+    }
+    // Извлечение числа из строки площади
+    function parseArea(areaStr) {
+      const match = areaStr.match(/\d+/);
+      return match ? parseInt(match[0], 10) : 0;
+    }
+    // Отправка запроса к ML модели через FastAPI
+    function sendQuery() {
+      const query = document.getElementById("search").value;
+      fetch("https://realty-ml-app2-189737689352.us-central1.run.app/parse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: query })
+      })
+      .then(response => response.json())
+      .then(data => {
+        console.log("Ответ от ML модели:", data);
+        // Сбрасываем все чекбоксы
+        document.querySelectorAll('.filters-panel input[type="checkbox"]').forEach(checkbox => {
+          checkbox.checked = false;
+        });
+        const recognized = data.mapped_result || {};
+        if (recognized.action_types) {
+          const actionValue = recognized.action_types.trim();
+          const actionCheckbox = document.querySelector(`input[name="action"][value="${actionValue}"]`);
+          if (actionCheckbox) { actionCheckbox.checked = true; }
+        }
+        if (recognized.realty_types) {
+          const realtyValue = recognized.realty_types.trim();
+          const realtyCheckbox = document.querySelector(`input[name="type"][value="${realtyValue}"]`);
+          if (realtyCheckbox) { realtyCheckbox.checked = true; }
+        }
+        if (recognized.town) {
+          const townValue = recognized.town.trim();
+          const townCheckbox = document.querySelector(`input[name="city"][value="${townValue}"]`);
+          if (townCheckbox) { townCheckbox.checked = true; }
+        }
+        if (Array.isArray(recognized.comfort)) {
+          recognized.comfort.forEach(item => {
+            const amenityValue = item.trim();
+            const amenityCheckbox = document.querySelector(`input[name="comfort"][value="${comfortValue}"]`);
+            if (amenityCheckbox) { amenityCheckbox.checked = true; }
+          });
+        }
+        if (Array.isArray(recognized.entertainment)) {
+          recognized.entertainment.forEach(item => {
+            const entValue = item.trim();
+            const entCheckbox = document.querySelector(`input[name="entertainment"][value="${entValue}"]`);
+            if (entCheckbox) { entCheckbox.checked = true; }
+          });
+        }
+        // Если распознана цена, обновляем ползунок
+        if (recognized.price) {
+          const priceValue = parseInt(recognized.price.replace(/\D/g, ''), 10);
+          if (!isNaN(priceValue)) {
+            document.getElementById("price").value = priceValue;
+            document.getElementById("priceDisplay").textContent = priceValue;
+          }
+        }
+        // Если распознана площадь, обновляем ползунок
+        if (recognized.area) {
+          const areaValue = parseArea(recognized.area);
+          if (!isNaN(areaValue)) {
+            document.getElementById("area").value = areaValue;
+            document.getElementById("areaDisplay").textContent = areaValue;
+          }
+        }
+        // Если распознано количество комнат, обновляем выбор в select
+        if (recognized.rooms) {
+          const roomsValue = recognized.rooms.trim();
+          document.getElementById("roomsSelect").value = roomsValue;
+        }
+        // Очищаем поле поиска
+        document.getElementById("search").value = "";
+        renderListings();
+      })
+      .catch(err => console.error("Ошибка:", err));
+    }
+    // Переключение отображения панели фильтров
+    function toggleFilters() {
+      const panel = document.getElementById("filtersPanel");
+      panel.style.display = panel.style.display === "block" ? "none" : "block";
+    }
+    // Массив объявлений (цены, площади и комнаты – строки/числа)
+    const listings = [
+      {
+        id: 1,
+        title: "Современная квартира в центре",
+        price: "30000 ₸",
+        area: "65 м2",
+        rooms: 2,
+        city: "Астана",
+        type: "квартира",
+        action: "аренда",
+        amenities: ["кондиционер", "бесплатный Wi-Fi"],
+        entertainment: ["smart tv"],
+        images: [
+          "https://a0.muscache.com/im/pictures/miso/Hosting-651835194444549195/original/42b07f95.jpeg",
+          "https://a0.muscache.com/im/pictures/miso/Hosting-651835194444549195/original/62337cd4.jpeg",
+          "https://a0.muscache.com/im/pictures/miso/Hosting-651835194444549195/original/6308d6e6.jpeg"
+        ]
+      },
+      {
+        id: 2,
+        title: "Уютный дом с садом",
+        price: "35000 ₸",
+        area: "120 м2",
+        rooms: 3,
+        city: "Алматы",
+        type: "Дом",
+        action: "покупка",
+        amenities: ["гараж", "кондиционер"],
+        entertainment: ["бассейн"],
+        images: [
+          "https://a0.muscache.com/im/pictures/hosting/Hosting-1106558817486636034/original/af4e1799.jpeg",
+          "https://a0.muscache.com/im/pictures/hosting/Hosting-1106558817486636034/original/08cd6d6b.jpeg",
+          "https://a0.muscache.com/im/pictures/hosting/Hosting-1106558817486636034/original/f557c251.jpeg"
+        ]
+      },
+      {
+        id: 3,
+        title: "Стильная квартира с видом",
+        price: "32000 ₸",
+        area: "75 м2",
+        rooms: 1,
+        city: "Астана",
+        type: "Квартира",
+        action: "аренда",
+        amenities: ["бесплатный Wi-Fi"],
+        entertainment: ["smart tv", "бассейн"],
+        images: [
+          "https://a0.muscache.com/im/pictures/hosting/Hosting-1127457818921957716/original/7d52b1e9.jpeg",
+          "https://a0.muscache.com/im/pictures/hosting/Hosting-1127457818921957716/original/bfe7694e.jpeg",
+          "https://a0.muscache.com/im/pictures/hosting/Hosting-1127457818921957716/original/c510e165.jpeg"
+        ]
+      },
+      {
+        id: 4,
+        title: "Элитная резиденция",
+        price: "40000 ₸",
+        area: "150 м2",
+        rooms: 4,
+        city: "Алматы",
+        type: "Дом",
+        action: "покупка",
+        amenities: ["бассейн", "кондиционер"],
+        entertainment: ["smart tv"],
+        images: [
+          "https://a0.muscache.com/im/pictures/3608ef81.jpeg",
+          "https://a0.muscache.com/im/pictures/bd968c8e.jpeg",
+          "https://a0.muscache.com/im/pictures/67b9720f.jpeg"
+        ]
+      },
+      {
+        id: 5,
+        title: "Современный пентхаус",
+        price: "33000 ₸",
+        area: "90 м2",
+        rooms: 3,
+        city: "Астана",
+        type: "Квартира",
+        action: "покупка",
+        amenities: ["кондиционер", "бесплатный Wi-Fi"],
+        entertainment: ["smart tv", "бассейн"],
+        images: [
+          "https://a0.muscache.com/im/pictures/hosting/Hosting-U3RheVN1cHBseUxpc3Rpbmc6/original.jpg",
+          "https://a0.muscache.com/im/pictures/hosting/Hosting-U3RheVN1cHBseUxpc3Rpbmc6/original.jpg",
+          "https://a0.muscache.com/im/pictures/hosting/Hosting-U3RheVN1cHBseUxpc3Rpbmc6/original.jpg"
+        ]
+      },
+      {
+        id: 6,
+        title: "Уютная квартира с ремонтом",
+        price: "25000 ₸",
+        area: "60 м2",
+        rooms: 2,
+        city: "Алматы",
+        type: "Квартира",
+        action: "аренда",
+        amenities: ["бесплатный Wi-Fi"],
+        entertainment: ["smart tv"],
+        images: [
+          "https://a0.muscache.com/im/pictures/miso/Hosting-1302918638960749253/original/image1.jpeg",
+          "https://a0.muscache.com/im/pictures/miso/Hosting-1302918638960749253/original/image2.jpeg",
+          "https://a0.muscache.com/im/pictures/miso/Hosting-1302918638960749253/original/image3.jpeg"
+        ]
+      }
+    ];
+    // Отрисовка карточек с учетом фильтров: чекбоксы, цена, площадь и количество комнат (по select)
+    function renderListings() {
+      const filters = {
+        action: getCheckedValues("action"),
+        type: getCheckedValues("type"),
+        city: getCheckedValues("city"),
+        amenities: getCheckedValues("amenities"),
+        entertainment: getCheckedValues("entertainment")
+      };
+      const priceMax = parseInt(document.getElementById("price").value, 10);
+      const areaMax = parseInt(document.getElementById("area").value, 10);
+      const roomsSelected = parseInt(document.getElementById("roomsSelect").value, 10);
+      
+      const filtered = listings.filter((item) => {
+        const matchesFilters = Object.entries(filters).every(([key, values]) =>
+          values.length === 0 ||
+          values.some(v =>
+            Array.isArray(item[key])
+              ? item[key].includes(v)
+              : item[key] === v
+          )
+        );
+        const listingPrice = parsePrice(item.price);
+        const matchesPrice = listingPrice <= priceMax;
+        const listingArea = parseArea(item.area);
+        const matchesArea = listingArea <= areaMax;
+        // Если выбрано "Любое" (0), то фильтрация по комнатам не применяется
+        const matchesRooms = roomsSelected === 0 ? true : (item.rooms === roomsSelected);
+        return matchesFilters && matchesPrice && matchesArea && matchesRooms;
+      });
+      
+      const container = document.getElementById("listings");
+      container.innerHTML = filtered.map((item) =>
+        `<div class="listing">
+          <div class="slider">
+            <img id="listing-image-${item.id}" src="${item.images[0]}" alt="${item.title}">
+            <div class="slider-controls">
+              ${item.images.map((_, index) =>
+                `<button class="slider-btn" onclick="changeSlide(${item.id}, ${index})"></button>`
+              ).join('')}
+            </div>
+          </div>
+          <div class="listing-info">
+            <h3>${item.title}</h3>
+            <p>${item.city} • ${item.type}</p>
+            <p>${item.price}</p>
+            <p>${item.action}</p>
+            <p>Площадь: ${item.area}</p>
+            <p>Комнат: ${item.rooms}</p>
+          </div>
+        </div>`
+      ).join('');
+    }
+    // Функция смены изображения в слайдере
+    function changeSlide(listingId, index) {
+      const listing = listings.find(item => item.id === listingId);
+      if (!listing) return;
+      const imgElement = document.getElementById("listing-image-" + listingId);
+      if (imgElement) {
+        imgElement.src = listing.images[index];
+      }
+    }
+    // Получение выбранных значений для фильтра
+    function getCheckedValues(name) {
+      return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(i => i.value);
+    }
+    // Обновление карточек при изменении фильтров
+    document.querySelectorAll(".filters-panel input").forEach(i => {
+      i.addEventListener("change", renderListings);
+    });
+    // Закрытие панели фильтров при клике вне её
+    window.addEventListener("click", (e) => {
+      if (!e.target.closest(".filters-panel") && !e.target.closest(".filter-btn")) {
+        document.getElementById("filtersPanel").style.display = "none";
+      }
+    });
+    // Отправка запроса по нажатию Enter в поле поиска
+    document.getElementById("search").addEventListener("keydown", function(e) {
+      if (e.key === "Enter") {
+        sendQuery();
+      }
+    });
+    // Изначальная отрисовка карточек
+    renderListings();
+
+    function switchLanguage(lang) {
+      if (lang === 'en') {
+        window.location.href = 'index1_en.html';
+      } else if (lang === 'ru') {
+        window.location.href = 'index1.html';
+      }
+    }
+  </script>
+</body>
+</html>
+
+
